@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-slate-50 font-sans text-slate-900 antialiased">
         <AppShell>{children}</AppShell>
+        <Analytics />
       </body>
     </html>
   );
