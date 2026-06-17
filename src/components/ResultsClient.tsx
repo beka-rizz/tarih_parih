@@ -52,13 +52,13 @@ function ResultDetails({ result }: { result: QuizResult }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <p className="text-sm text-slate-500">
           {formatResultDate(result.completedAt)}
         </p>
-        <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
+        <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:justify-between sm:gap-6">
           <ScoreRing percentage={result.percentage} />
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid w-full grid-cols-3 gap-3 text-center sm:w-auto sm:gap-4">
             <div>
               <p className="text-2xl font-bold text-slate-900">
                 {result.totalQuestions}
@@ -112,7 +112,7 @@ function ResultDetails({ result }: { result: QuizResult }) {
 
           <Link
             href="/quiz"
-            className="mt-6 inline-block rounded-xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700"
+            className="touch-target mt-5 inline-flex w-full items-center justify-center rounded-xl bg-amber-600 px-5 py-3.5 text-sm font-semibold text-white transition active:scale-[0.98] hover:bg-amber-700 sm:mt-6 sm:w-auto"
           >
             Әлсіз тақырыптарды қайта тесттеу
           </Link>
@@ -213,10 +213,10 @@ export default function ResultsClient() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Нәтижелер</h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Нәтижелер</h1>
+        <p className="mt-2 text-sm text-slate-600 sm:text-base">
           Тест аяқталды. Төменде әлсіз тақырыптар мен қате жауаптар
           көрсетілген.
         </p>
@@ -230,15 +230,15 @@ export default function ResultsClient() {
       <ResultDetails result={result} />
 
       {history.length > 0 && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <h2 className="font-semibold text-slate-900">
               Менің тесттерім ({history.length})
             </h2>
             <button
               type="button"
               onClick={handleClearHistory}
-              className="text-sm font-medium text-red-600 transition hover:text-red-800"
+              className="touch-target self-start rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-800 sm:self-auto"
             >
               Тазалау
             </button>
@@ -253,7 +253,7 @@ export default function ResultsClient() {
                   <button
                     type="button"
                     onClick={() => selectResult(item.id)}
-                    className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition ${
+                    className={`touch-target flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left text-sm transition active:scale-[0.99] ${
                       isActive
                         ? "bg-sky-100 text-sky-900 ring-1 ring-sky-200"
                         : "bg-slate-50 text-slate-700 hover:bg-slate-100"

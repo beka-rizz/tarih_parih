@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans } from "next/font/google";
+import AppShell from "@/components/AppShell";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -11,6 +12,13 @@ export const metadata: Metadata = {
   title: "Tarih Parih — Қазақстан тарихы",
   description:
     "Қазақстан тарихы бойынша тесттер мен карточкалар. Тесттен кейін әлсіз тақырыптарды талдау.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0369a1",
 };
 
 export default function RootLayout({
@@ -25,7 +33,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full bg-slate-50 font-sans text-slate-900 antialiased">
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

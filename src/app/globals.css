@@ -3,6 +3,7 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --mobile-nav-height: 4.25rem;
 }
 
 @theme inline {
@@ -11,12 +12,41 @@
   --font-sans: var(--font-noto-sans), system-ui, sans-serif;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  overscroll-behavior-y: none;
 }
 
 * {
   box-sizing: border-box;
+}
+
+@layer utilities {
+  .touch-target {
+    min-height: 2.75rem;
+    touch-action: manipulation;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .sticky-mobile-actions {
+    position: sticky;
+    bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 10;
+  }
+
+  @media (min-width: 768px) {
+    .sticky-mobile-actions {
+      position: static;
+    }
+  }
 }

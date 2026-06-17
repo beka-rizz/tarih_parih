@@ -180,12 +180,12 @@ export default function CardSetItem({
         </div>
       )}
 
-      <div className={`mt-5 grid gap-3 ${hasSavedQuestions ? "grid-cols-2" : ""}`}>
+      <div className={`mt-5 grid gap-2.5 ${hasSavedQuestions ? "grid-cols-1 sm:grid-cols-2" : ""}`}>
         {hasSavedQuestions && (
           <button
             type="button"
             onClick={() => onView(cardSet)}
-            className="rounded-xl border border-sky-300 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-800 transition hover:bg-sky-100"
+            className="touch-target rounded-xl border border-sky-300 bg-sky-50 px-4 py-3.5 text-sm font-semibold text-sky-800 transition active:scale-[0.98] hover:bg-sky-100"
           >
             Көру
           </button>
@@ -193,7 +193,7 @@ export default function CardSetItem({
         <button
           type="button"
           onClick={() => onStart(cardSet)}
-          className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-800 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:from-sky-700 hover:to-sky-900"
+          className="touch-target rounded-xl bg-gradient-to-r from-sky-600 to-sky-800 px-4 py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98] hover:from-sky-700 hover:to-sky-900"
         >
           Бастау
         </button>

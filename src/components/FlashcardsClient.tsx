@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import CardSetItem from "@/components/CardSetItem";
 import CardSetPreview from "@/components/CardSetPreview";
 import CreateCardSetForm from "@/components/CreateCardSetForm";
+import FlashcardSwipe from "@/components/FlashcardSwipe";
 import ProgressBar from "@/components/ProgressBar";
+import { useMobileNav } from "@/context/MobileNavContext";
 import {
   createCardSet,
   deleteCardSet,
@@ -24,6 +26,7 @@ interface FlashcardsClientProps {
 type View = "manage" | "session" | "preview";
 
 export default function FlashcardsClient({ topics }: FlashcardsClientProps) {
+  const { setHidden } = useMobileNav();
   const [view, setView] = useState<View>("manage");
   const [cardSets, setCardSets] = useState<CardSet[]>([]);
   const [activeSet, setActiveSet] = useState<CardSet | null>(null);
@@ -40,6 +43,11 @@ export default function FlashcardsClient({ topics }: FlashcardsClientProps) {
   useEffect(() => {
     setCardSets(getCardSets());
   }, []);
+
+  useEffect(() => {
+    setHidden(view === "session");
+    return () => setHidden(false);
+  }, [view, setHidden]);
 
   const currentCard = cards[index];
 
@@ -177,10 +185,10 @@ export default function FlashcardsClient({ topics }: FlashcardsClientProps) {
 
   if (view === "manage") {
     return (
-      <div className="mx-auto max-w-2xl space-y-8">
+      <div className="mx-auto max-w-2xl space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Карточкалар</h1>
-          <p className="mt-2 text-slate-600">
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Карточкалар</h1>
+          <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Карточка жинақтарын жасаңыз, атауын өзгертіңіз және оқуды бастаңыз.
             Сұрақтар мен әлсіз жақтар сақталады.
           </p>
@@ -342,14 +350,16 @@ export default function FlashcardsClient({ topics }: FlashcardsClientProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-4 sm:space-y-6">
       {activeSet && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-sky-700">{activeSet.name}</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-sm font-medium text-sky-700">
+            {activeSet.name}
+          </p>
           <button
             type="button"
             onClick={backToManage}
-            className="text-sm text-slate-500 transition hover:text-slate-700"
+            className="touch-target shrink-0 rounded-lg px-3 py-2 text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           >
             Тоқтату
           </button>
@@ -358,35 +368,29 @@ export default function FlashcardsClient({ topics }: FlashcardsClientProps) {
 
       <ProgressBar current={index + 1} total={cards.length} />
 
-      <button
-        type="button"
-        onClick={() => setFlipped((prev) => !prev)}
-        className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition hover:border-sky-300 sm:min-h-64"
-      >
-        <p className="text-xs font-medium uppercase tracking-wide text-sky-700">
-          {currentCard.topic}
-        </p>
-        <p className="mt-4 text-xl font-semibold leading-relaxed text-slate-900 sm:text-2xl">
-          {flipped ? currentCard.answer : currentCard.question}
-        </p>
-        <p className="mt-6 text-sm text-slate-400">
-          {flipped ? "Сұрақты көру" : "Жауапты көру"} — басу
-        </p>
-      </button>
+      <FlashcardSwipe
+        topic={currentCard.topic}
+        front={currentCard.question}
+        back={currentCard.answer}
+        flipped={flipped}
+        onFlip={() => setFlipped((prev) => !prev)}
+        onSwipeLeft={() => markCard(false)}
+        onSwipeRight={() => markCard(true)}
+      />
 
       {flipped && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="sticky-mobile-actions grid grid-cols-2 gap-2.5 safe-bottom sm:static sm:gap-3">
           <button
             type="button"
             onClick={() => markCard(false)}
-            className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 font-semibold text-amber-800 transition hover:bg-amber-100"
+            className="touch-target rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800 transition active:scale-[0.98] hover:bg-amber-100 sm:text-base"
           >
             Білмеймін
           </button>
           <button
             type="button"
             onClick={() => markCard(true)}
-            className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            className="touch-target rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-800 transition active:scale-[0.98] hover:bg-emerald-100 sm:text-base"
           >
             Білемін
           </button>

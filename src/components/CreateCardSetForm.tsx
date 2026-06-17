@@ -48,13 +48,13 @@ export default function CreateCardSetForm({
           <label className="block text-xs font-medium text-slate-500">
             Сұрақтар саны
           </label>
-          <div className="mt-1 grid grid-cols-4 gap-2">
+          <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {QUESTION_COUNTS.map((count) => (
               <button
                 key={count}
                 type="button"
                 onClick={() => setQuestionCount(count)}
-                className={`rounded-lg border px-2 py-2 text-sm font-semibold transition ${
+                className={`touch-target rounded-lg border px-2 py-3 text-sm font-semibold transition active:scale-[0.98] ${
                   questionCount === count
                     ? "border-sky-600 bg-sky-600 text-white"
                     : "border-slate-200 bg-white text-slate-700 hover:border-sky-300"
@@ -67,18 +67,18 @@ export default function CreateCardSetForm({
         </div>
       </div>
 
-      <div className="mt-5 flex gap-3">
+      <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:gap-3">
         <button
           type="button"
           onClick={() => onCreate({ topic, questionCount })}
-          className="flex-1 rounded-xl bg-gradient-to-r from-sky-600 to-sky-800 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:from-sky-700 hover:to-sky-900"
+          className="touch-target flex-1 rounded-xl bg-gradient-to-r from-sky-600 to-sky-800 px-4 py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98] hover:from-sky-700 hover:to-sky-900"
         >
           Жасау
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          className="touch-target rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm font-semibold text-slate-600 transition active:scale-[0.98] hover:bg-slate-50 sm:shrink-0"
         >
           Болдырмау
         </button>
