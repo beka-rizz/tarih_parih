@@ -7,8 +7,8 @@ export interface Question {
 
 export interface QuestionsData {
   meta: {
-    totalQuestions: number;
-    topics: number;
+    totalQuestions: string;
+    topics: string;
     generatedAt: string;
   };
   topics: string[];

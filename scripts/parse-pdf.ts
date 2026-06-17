@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { PDFParse } from "pdf-parse";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
 export interface ParsedQuestion {
   id: string;
@@ -9,52 +9,26 @@ export interface ParsedQuestion {
   topic: string;
 }
 
+interface TextLine {
+  text: string;
+  minX: number;
+  maxX: number;
+  pageNum: number;
+  y: number;
+}
+
 const PAGE_MARKER = /^--\s*\d+\s+of\s+\d+\s*--$/;
-const SECTION_MARKER = /^(\d+)-(тапсырма|сынып)$/;
+const GRADE_MARKER = /^(\d+)\s*-\s*сынып$/i;
+const TASK_MARKER = /^(\d+)-тапсырма$/i;
 const NUMBERED_START = /^(\d+)\.\s+/;
 
 function cleanText(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function isSectionHeader(line: string): boolean {
-  if (!line || line.length > 150) return false;
-  if (line.includes(":")) return false;
-  if (NUMBERED_START.test(line)) return false;
-  if (PAGE_MARKER.test(line)) return false;
-  if (SECTION_MARKER.test(line)) return true;
-
-  const eraPattern =
-    /(палеолит|мезолит|неолит|энеолит|мыстытас|қола\s*дәуір|темір\s*дәуір)/i;
-  const hasDate = /б\.?\s*з\.?\s*[бд]?\.?/i.test(line) || /\d+\s*мың\s*жыл/i.test(line);
-
-  if (eraPattern.test(line) && (hasDate || line.length < 90)) return true;
-  if (/дәуірі\s*$/i.test(line.trim()) && line.length < 80) return true;
-  if (/ғасыры/i.test(line) && hasDate) return true;
-
-  const knownSections = [
-    "Ежелгі адамдар",
-    "Ежелгі адамдардың өмірі мен еңбек құралдары",
-    "Ежелгі адамдардың қоғамдық құрылысы",
-    "Ежелгі адамдардың діни нанымдары",
-    "Мыстытас ғасыры(энеолит) дәуірі",
-    "Оғыз мемлекеті",
-    "Қазақстан түбегейлі бетбұрыстар кезінде",
-    "Тоқырау жылдарындағы Қазақстан",
-    "ХХ ғасырдың басындағы Қазақстан",
-    "Азамат соғысы жылдарындағы Қазақстан",
-    "Екологиялық дағдарыс және оның салдары",
-    "Ауыл шаруашылығының дамуы",
-    "Өнеркәсіпте қалыптасқан жағдай",
-    "Сақтар туралы деректер",
-    "Сақтардың қоғамдық құрылысы",
-    "Сақтардың сыртқы саясаты",
-    "Сақтардың шаруашылығы мен мәдениеті",
-  ];
-
-  return knownSections.some(
-    (section) => line === section || line.startsWith(section),
-  );
+function normalizeGrade(text: string): string {
+  const match = text.match(GRADE_MARKER);
+  return match ? `${match[1]}-сынып` : cleanText(text);
 }
 
 function buildTopic(grade: string, task: string, section: string): string {
@@ -63,6 +37,95 @@ function buildTopic(grade: string, task: string, section: string): string {
 
 function stripNumberPrefix(text: string): string {
   return text.replace(NUMBERED_START, "");
+}
+
+function isGradeLine(text: string): boolean {
+  return GRADE_MARKER.test(cleanText(text));
+}
+
+function isTaskLine(text: string): boolean {
+  return TASK_MARKER.test(cleanText(text).replace(/\s+/g, ""));
+}
+
+function isCenteredSectionHeader(
+  text: string,
+  minX: number,
+  maxX: number,
+  pageWidth: number,
+): boolean {
+  if (!text || text.length > 90) return false;
+  if (text.includes(":")) return false;
+  if (NUMBERED_START.test(text)) return false;
+  if (PAGE_MARKER.test(text)) return false;
+  if (text.endsWith(".)") || text.endsWith(")")) return false;
+  if (/^\(/.test(text)) return false;
+
+  const lineWidth = maxX - minX;
+  const lineCenter = (minX + maxX) / 2;
+  const pageCenter = pageWidth / 2;
+  const centerOffset = Math.abs(lineCenter - pageCenter);
+
+  return centerOffset < 70 && minX > 90 && lineWidth < 240;
+}
+
+function isShortTitleSection(text: string, minX: number, maxX: number): boolean {
+  if (!text || text.length > 50) return false;
+  if (text.includes(":")) return false;
+  if (NUMBERED_START.test(text)) return false;
+  if (PAGE_MARKER.test(text)) return false;
+  if (text.endsWith(".)") || text.endsWith(")")) return false;
+  if (/^\(/.test(text)) return false;
+  if (text.includes(",") && text.length > 40) return false;
+
+  const lineWidth = maxX - minX;
+  const words = wordCount(text);
+
+  return lineWidth < 95 && minX > 175 && words <= 6;
+}
+
+function isEraSectionHeader(text: string, minX: number): boolean {
+  if (!text || text.length > 100) return false;
+  if (text.includes(":")) return false;
+  if (NUMBERED_START.test(text)) return false;
+  if (PAGE_MARKER.test(text)) return false;
+  if (isGradeLine(text) || isTaskLine(text)) return false;
+  if (text.endsWith(".)") || text.endsWith(")")) return false;
+  if (text.includes("?")) return false;
+  if (text.includes(",") && text.length > 45) return false;
+  if (/деп жазған|бойынша|туралы/i.test(text) && text.length > 50) return false;
+
+  const eraPattern =
+    /(палеолит|мезолит|неолит|энеолит|мыстытас|қола\s*дәуір|темір\s*дәуір|ғасыры|дәуірі)/i;
+  const hasDate =
+    /б\.?\s*з\.?\s*[бд]?\.?/i.test(text) ||
+    /\d+\s*мың/i.test(text) ||
+    /\d+\s*ғ/i.test(text) ||
+    /\d+-\d+\s*ж/i.test(text) ||
+    /\d{3,4}\s*жыл/i.test(text);
+
+  if (eraPattern.test(text) && (hasDate || text.length < 95)) return true;
+  if (/дәуірі\s*$/i.test(text.trim()) && text.length < 90) return true;
+  if (hasDate && text.length < 70 && wordCount(text) <= 8 && minX > 120) return true;
+
+  return false;
+}
+
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+function isSectionHeader(
+  text: string,
+  minX: number,
+  maxX: number,
+  pageWidth: number,
+): boolean {
+  if (isGradeLine(text) || isTaskLine(text)) return false;
+  return (
+    isCenteredSectionHeader(text, minX, maxX, pageWidth) ||
+    isShortTitleSection(text, minX, maxX) ||
+    isEraSectionHeader(text, minX)
+  );
 }
 
 function tryParseColonLine(line: string): { question: string; answer: string } | null {
@@ -136,9 +199,9 @@ function isShortAnswer(answer: string): boolean {
 
 function isAnswerContinuationLine(line: string): boolean {
   if (!line || PAGE_MARKER.test(line)) return false;
-  if (SECTION_MARKER.test(line)) return false;
+  if (TASK_MARKER.test(line.replace(/\s+/g, ""))) return false;
+  if (GRADE_MARKER.test(line)) return false;
   if (NUMBERED_START.test(line)) return false;
-  if (isSectionHeader(line)) return false;
   if (line.startsWith("(")) return false;
   if (/^\d{3,4}\s*ж\./.test(line)) return false;
   if (line.length > 55) return false;
@@ -150,21 +213,62 @@ function isAnswerContinuationLine(line: string): boolean {
   return true;
 }
 
-function parseQuestions(text: string): ParsedQuestion[] {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !PAGE_MARKER.test(line));
+async function extractLines(buffer: Buffer): Promise<TextLine[]> {
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjs.getDocument({ data, useSystemFonts: true }).promise;
+  const lines: TextLine[] = [];
 
+  for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+    const page = await doc.getPage(pageNum);
+    const textContent = await page.getTextContent();
+    const lineMap = new Map<number, { str: string; x: number; w: number }[]>();
+
+    for (const item of textContent.items) {
+      if (!("str" in item) || !item.str.trim()) continue;
+
+      const y = Math.round(item.transform[5]);
+      const x = item.transform[4];
+      const w = item.width ?? 0;
+
+      if (!lineMap.has(y)) lineMap.set(y, []);
+      lineMap.get(y)!.push({ str: item.str.trim(), x, w });
+    }
+
+    const sortedYs = [...lineMap.keys()].sort((a, b) => b - a);
+
+    for (const y of sortedYs) {
+      const items = lineMap.get(y)!.sort((a, b) => a.x - b.x);
+      const text = items.map((i) => i.str).join(" ").trim();
+      if (!text) continue;
+
+      const minX = items[0].x;
+      const maxX = items[items.length - 1].x + items[items.length - 1].w;
+
+      lines.push({ text, minX, maxX, pageNum, y });
+    }
+  }
+
+  return lines;
+}
+
+function parseQuestionsFromLines(lines: TextLine[], pageWidths: Map<number, number>): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
   let currentGrade = "";
   let currentTask = "";
   let currentSection = "";
+  let pendingSectionParts: string[] = [];
   let numberedBuffer = "";
   let questionPrefix = "";
   let pendingShortAnswerIndex: number | null = null;
 
   const currentTopic = () => buildTopic(currentGrade, currentTask, currentSection);
+
+  const flushSection = () => {
+    if (pendingSectionParts.length > 0) {
+      currentSection = pendingSectionParts.join(" ");
+      pendingSectionParts = [];
+    }
+  };
 
   const pushQuestion = (question: string, answer: string) => {
     questions.push({
@@ -211,30 +315,40 @@ function parseQuestions(text: string): ParsedQuestion[] {
     pendingShortAnswerIndex = null;
   };
 
-  for (let rawLine of lines) {
+  for (const { text: rawLine, minX, maxX, pageNum } of lines) {
+    const pageWidth = pageWidths.get(pageNum) ?? 595;
+
+    if (PAGE_MARKER.test(rawLine)) continue;
+
+    if (isGradeLine(rawLine)) {
+      resetLineBuffers();
+      flushSection();
+      currentGrade = normalizeGrade(rawLine);
+      currentTask = "";
+      currentSection = "";
+      continue;
+    }
+
+    if (isTaskLine(rawLine)) {
+      resetLineBuffers();
+      flushSection();
+      currentTask = cleanText(rawLine);
+      currentSection = "";
+      continue;
+    }
+
+    if (isSectionHeader(rawLine, minX, maxX, pageWidth)) {
+      resetLineBuffers();
+      pendingSectionParts.push(cleanText(rawLine));
+      continue;
+    }
+
+    flushSection();
+
+    let line = rawLine;
     if (questionPrefix) {
-      rawLine = cleanText(`${questionPrefix} ${rawLine}`);
+      line = cleanText(`${questionPrefix} ${line}`);
       questionPrefix = "";
-    }
-
-    const line = rawLine;
-
-    const sectionMatch = line.match(SECTION_MARKER);
-    if (sectionMatch) {
-      resetLineBuffers();
-      if (sectionMatch[2] === "сынып") {
-        currentGrade = line;
-        currentTask = "";
-      } else {
-        currentTask = line;
-      }
-      continue;
-    }
-
-    if (isSectionHeader(line)) {
-      resetLineBuffers();
-      currentSection = line;
-      continue;
     }
 
     if (
@@ -273,6 +387,7 @@ function parseQuestions(text: string): ParsedQuestion[] {
     }
   }
 
+  flushSection();
   resetLineBuffers();
 
   const seen = new Set<string>();
@@ -284,16 +399,27 @@ function parseQuestions(text: string): ParsedQuestion[] {
   });
 }
 
+async function getPageWidths(buffer: Buffer): Promise<Map<number, number>> {
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjs.getDocument({ data, useSystemFonts: true }).promise;
+  const widths = new Map<number, number>();
+
+  for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+    const page = await doc.getPage(pageNum);
+    widths.set(pageNum, page.getViewport({ scale: 1 }).width);
+  }
+
+  return widths;
+}
+
 async function main() {
   const pdfPath = path.join(process.cwd(), "тарих_вопросы.pdf");
   const outputPath = path.join(process.cwd(), "src/data/questions.json");
 
   const buffer = fs.readFileSync(pdfPath);
-  const parser = new PDFParse({ data: buffer });
-  const result = await parser.getText();
-  await parser.destroy();
-
-  const questions = parseQuestions(result.text);
+  const pageWidths = await getPageWidths(buffer);
+  const lines = await extractLines(buffer);
+  const questions = parseQuestionsFromLines(lines, pageWidths);
 
   const topics = [...new Set(questions.map((q) => q.topic))];
 
