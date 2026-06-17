@@ -58,10 +58,10 @@ export default function Home() {
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-2xl font-bold text-sky-700 sm:text-3xl">3</p>
+            <p className="text-2xl font-bold text-sky-700 sm:text-3xl">2</p>
             <p className="mt-2 font-medium text-slate-900">Режим</p>
             <p className="mt-1 text-sm text-slate-500">
-              Тест, карточкалар, нәтижелер
+              Тест және карточкалар
             </p>
           </div>
         </div>

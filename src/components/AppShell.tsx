@@ -1,6 +1,7 @@
 "use client";
 
 import Header from "@/components/Header";
+import InstallAppBanner from "@/components/InstallAppBanner";
 import MobileNav from "@/components/MobileNav";
 import { MobileNavProvider, useMobileNav } from "@/context/MobileNavContext";
 
@@ -16,6 +17,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       }`}
     >
       <Header />
+      <InstallAppBanner />
       {children}
       <MobileNav />
     </div>
