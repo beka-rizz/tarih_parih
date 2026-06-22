@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "parse:pdf": "tsx scripts/parse-pdf.ts",
+    "generate:distractors": "tsx scripts/generate-distractors.ts",
     "lint": "eslint"
   },
   "dependencies": {
