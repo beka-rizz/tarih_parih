@@ -8,6 +8,7 @@
     "start": "next start",
     "parse:pdf": "tsx scripts/parse-pdf.ts",
     "generate:distractors": "tsx scripts/generate-distractors.ts",
+    "generate:distractors:openai": "tsx scripts/generate-distractors-openai.ts",
     "lint": "eslint"
   },
   "dependencies": {
